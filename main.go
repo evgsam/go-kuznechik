@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 // Предполагаемые к использованию в коде типы данных
 type Block = [16]byte
@@ -11,18 +14,12 @@ type RoundKeys = [10]RoundKey
 // числовое выражение -константа полинома x^8 + x^7 + x^6 + x + 1
 const gf8 = 0xc3
 
-// Предполагаемые к использованию функции
-// инициалищация контекста шифра
-/*func NewKuznyechik(key Key256) RoundKeys
+// коэфициенты для линейного преобразования
+var L_coeffs = [16]byte{
+	0x94, 0x20, 0x85, 0x10, 0xC2, 0xC0, 0x01, 0xFB,
+	0x01, 0xC0, 0xC2, 0x10, 0x85, 0x20, 0x94, 0x01,
+}
 
-// шифрование одного блока
-func EncryptBlock(plaintext Block, rk RoundKeys) (ciphertext Block)
-
-// расшифрование одного блока
-func DecryptBlock(ciphertext Block, rk RoundKeys) (plaintext Block)
-*/
-// X-преобразования
-// xor двух блоков c= a XOR b
 func XorBlock(a, b Block) (res Block) {
 	var i int
 	for i = 0; i < 16; i++ {
@@ -58,9 +55,89 @@ func MulByConst(b, c uint8) uint8 {
 	return GF8Mul(b, c)
 }
 
+// L-функция
+func L(block Block) Block {
+	var i, j int
+	var x uint8
+	for j = 0; j < 16; j++ { // 16 R-итераций
+		x = block[15]             // x=a[15]
+		for i = 14; i >= 0; i-- { //сдвигаю вправо
+			block[i+1] = block[i] // a_i -> a_{i+1}
+			x = x ^ GF8Mul(block[i], L_coeffs[i])
+		}
+		block[0] = x // новый a0 = l(...)
+	}
+	return block
+}
+
+// L-функция инверсная
+func L_invers(block Block) Block {
+	var i, j int
+	var x uint8
+	for j = 0; j < 16; j++ { // 16 R-итераций
+		x = block[0]             // x=a[0]
+		for i = 0; i < 15; i++ { //сдвигаю влево
+			block[i] = block[i+1] //  a_{i+1} -> a_i
+			x = x ^ GF8Mul(block[i], L_coeffs[i])
+		}
+		block[15] = x // новый a15 = l(...)
+	}
+	return block
+}
+
+func HexToBlock(hex string) Block {
+	var block Block
+	for i := 0; i < 16; i++ {
+		// Ручной парсинг двух hex-символов
+		hi := hex[30-2*i]
+		lo := hex[31-2*i]
+		block[i] = hexCharToByte(hi)<<4 | hexCharToByte(lo)
+	}
+	return block
+}
+
+func hexCharToByte(c byte) byte {
+	switch {
+	case '0' <= c && c <= '9':
+		return c - '0'
+	case 'a' <= c && c <= 'f':
+		return c - 'a' + 10
+	case 'A' <= c && c <= 'F':
+		return c - 'A' + 10
+	default:
+		panic("Invalid hex")
+	}
+}
+
+func BlockToHex(block Block) string {
+	hexStr := ""
+	for i := 15; i >= 0; i-- { // слева направо: старший → младший
+		hexStr += fmt.Sprintf("%02x", block[i])
+	}
+	return hexStr
+}
+
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
-	fmt.Println(GF8Mul(0x01, 0x01)) // Должно быть 0x01
-	fmt.Println(GF8Mul(0x02, 0x01)) // Должно быть 0x02
-	fmt.Println(GF8Mul(0xFF, 0x01)) // Должно быть 0xFF
+
+	input := Block{
+		0xd4, 0x56, 0x58, 0x4d, 0xd0, 0xe3, 0xe8, 0x4c,
+		0xc3, 0x16, 0x6e, 0x4b, 0x7f, 0xa2, 0x89, 0x0d,
+	}
+
+	answer := Block{
+		0x79, 0xd2, 0x62, 0x21, 0xb8, 0x7b, 0x58, 0x4c,
+		0xd4, 0x2f, 0xbc, 0x4f, 0xfe, 0xa5, 0xde, 0x9a,
+	}
+
+	result := L(input)
+	fmt.Printf("L результат: %s\n", BlockToHex(result)) // ← ДОБАВЬ ЭТО
+	fmt.Printf("Ожидаемый:   79d26221b87b584cd42fbc4ffea5de9a\n")
+
+	if bytes.Equal(result[:], answer[:]) {
+		fmt.Println("Тест L ПРОВЕДЁН УСПЕШНО!")
+	} else {
+		fmt.Println("Тест L ПРОВАЛЕН!")
+	}
+
 }
