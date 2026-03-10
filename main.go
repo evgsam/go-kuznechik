@@ -85,38 +85,6 @@ func L_invers(block Block) Block {
 	return block
 }
 
-func HexToBlock(hex string) Block {
-	var block Block
-	for i := 0; i < 16; i++ {
-		// Ручной парсинг двух hex-символов
-		hi := hex[30-2*i]
-		lo := hex[31-2*i]
-		block[i] = hexCharToByte(hi)<<4 | hexCharToByte(lo)
-	}
-	return block
-}
-
-func hexCharToByte(c byte) byte {
-	switch {
-	case '0' <= c && c <= '9':
-		return c - '0'
-	case 'a' <= c && c <= 'f':
-		return c - 'a' + 10
-	case 'A' <= c && c <= 'F':
-		return c - 'A' + 10
-	default:
-		panic("Invalid hex")
-	}
-}
-
-func BlockToHex(block Block) string {
-	hexStr := ""
-	for i := 15; i >= 0; i-- { // слева направо: старший → младший
-		hexStr += fmt.Sprintf("%02x", block[i])
-	}
-	return hexStr
-}
-
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
 
