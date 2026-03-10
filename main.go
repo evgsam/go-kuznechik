@@ -53,6 +53,11 @@ func GF8Mul(a, b uint8) uint8 {
 	return c
 }
 
+// обертка для умножения констант
+func MulByConst(b, c uint8) uint8 {
+	return GF8Mul(b, c)
+}
+
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
 	fmt.Println(GF8Mul(0x01, 0x01)) // Должно быть 0x01
