@@ -157,27 +157,40 @@ func L_invers(block Block) Block {
 	return block
 }
 
+// S-функция
+func S(block Block) Block {
+	result := block
+	for i := 0; i < 16; i++ {
+		result[i] = Pi_table[block[i]]
+	}
+	return result
+}
+
+// S-функция инверсная
+func S_invers(block Block) Block {
+	result := block
+	for i := 0; i < 16; i++ {
+		result[i] = Pi_inverse_table[block[i]]
+	}
+	return result
+}
+
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
 
 	input := Block{
-		0xd4, 0x56, 0x58, 0x4d, 0xd0, 0xe3, 0xe8, 0x4c,
-		0xc3, 0x16, 0x6e, 0x4b, 0x7f, 0xa2, 0x89, 0x0d,
+		0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
+		0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00,
 	}
 
 	answer := Block{
-		0x79, 0xd2, 0x62, 0x21, 0xb8, 0x7b, 0x58, 0x4c,
-		0xd4, 0x2f, 0xbc, 0x4f, 0xfe, 0xa5, 0xde, 0x9a,
+		0xb6, 0x6c, 0xd8, 0x88, 0x7d, 0x38, 0xe8, 0xd7,
+		0x77, 0x65, 0xae, 0xea, 0x0c, 0x9a, 0x7e, 0xfc,
 	}
 
-	result := L(input)
-	fmt.Printf("L результат: %s\n", BlockToHex(result)) // ← ДОБАВЬ ЭТО
-	fmt.Printf("Ожидаемый:   79d26221b87b584cd42fbc4ffea5de9a\n")
-
+	result := S(input)
 	if bytes.Equal(result[:], answer[:]) {
-		fmt.Println("Тест L ПРОВЕДЁН УСПЕШНО!")
-	} else {
-		fmt.Println("Тест L ПРОВАЛЕН!")
+		fmt.Println("Тест успешно пройден")
 	}
 
 }
