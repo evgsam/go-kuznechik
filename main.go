@@ -175,6 +175,30 @@ func S_invers(block Block) Block {
 	return result
 }
 
+// функция одного раунда шифрования
+func Round(state Block, roundKey RoundKey) Block {
+	state = XorKey(state, roundKey) // X
+	state = S(state)                // S
+	state = L(state)                // L
+	return state
+}
+
+// функция блочного шифрования
+func EncryptBlock(plaintext Block, roundKeys RoundKeys) Block {
+	state := plaintext
+
+	// 9 полных раундов (1-9)
+	for r := 0; r < 9; r++ {
+		state = Round(state, roundKeys[r])
+	}
+
+	// 10-й раунд: только X + S (БЕЗ L)
+	state = XorKey(state, roundKeys[9])
+	state = S(state)
+
+	return state
+}
+
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
 
