@@ -155,17 +155,15 @@ func L(block Block) Block {
 	return block
 }
 
-// L-функция инверсная
 func L_invers(block Block) Block {
-	var i, j int
 	var x uint8
-	for j = 0; j < 16; j++ { // 16 R-итераций
-		x = block[0]             // x=a[0]
-		for i = 0; i < 15; i++ { //сдвигаю влево
-			block[i] = block[i+1] //  a_{i+1} -> a_i
-			x = x ^ GF8Mul(block[i], L_coeffs[i])
+	for j := 0; j < 16; j++ { // 16 итераций LFSR
+		x = block[0]
+		for i := 0; i < 15; i++ { // Сдвиг влево
+			block[i] = block[i+1]
+			x ^= GF8Mul(block[i], L_coeffs[i])
 		}
-		block[15] = x // новый a15 = l(...)
+		block[15] = x
 	}
 	return block
 }
@@ -186,6 +184,22 @@ func S_invers(block Block) Block {
 		result[i] = Pi_inverse_table[block[i]]
 	}
 	return result
+}
+
+// S_inv_L_inv через lookup таблицы
+func S_inv_L_inv(block Block) Block {
+	var result Block
+	copy(result[:], SL_dec_lookup[0][block[0]][:])
+
+	for j := 1; j < 16; j++ {
+		result = XorBlock(result, SL_dec_lookup[j][block[j]])
+	}
+	return result
+}
+
+// S⁻¹ для финального шага
+func S_inverse(block Block) Block {
+	return S_invers(block)
 }
 
 // функция одного раунда шифрования
