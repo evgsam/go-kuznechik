@@ -283,22 +283,62 @@ func KeySchedule(masterKey Key256) RoundKeys {
 }
 
 // Функция шифрования
-func Encrypt(rkeys RoundKeys, block RoundKey) RoundKey {
+func Encrypt(masterKey Key256, block RoundKey) RoundKey {
+	decKeys := KeySchedule(masterKey)
 	state := block
 
-	state = XorKey(state, rkeys[0]) // X[K1]
+	state = XorKey(state, decKeys[0]) // X[K1]
 
 	for i := 0; i < 9; i++ {
 		state = S(state)
 		state = L(state)
-		state = XorKey(state, rkeys[i+1]) // K2..K10
+		state = XorKey(state, decKeys[i+1]) // K2..K10
 	}
 
 	return state
 }
 
+func GetDecryptRoundKeys(rkeys [10][16]uint8) [10][16]uint8 {
+	var rkeys_L [10][16]uint8
+
+	// K1 (индекс 0) — БЕЗ ИЗМЕНЕНИЙ
+	rkeys_L[0] = rkeys[0]
+
+	// K2..K10 (индексы 1-9) — L⁻¹(Kᵢ)
+	for k := 1; k < 10; k++ {
+		rkeys_L[k] = L_invers(rkeys[k])
+	}
+	return rkeys_L
+}
+
+// функция расшифровки
+func Decrypt(masterKey Key256, ciphertext Block) Block {
+	encKeys := KeySchedule(masterKey)
+	decKeys := GetDecryptRoundKeys(encKeys)
+
+	pt := ciphertext
+
+	// ШАГ 1: L⁻¹ на входе
+	pt = L_invers(pt)
+
+	// ШАГ 2: 8 раундов K10→K3
+	for i := 9; i > 1; i-- {
+		pt = XorKey(pt, decKeys[i]) // L⁻¹(Ki)
+		pt = S_inv_L_inv(pt)        // SL⁻¹
+	}
+
+	// ШАГ 3: Финал
+	pt = XorKey(pt, decKeys[1]) // L⁻¹(K2)
+	pt = S_inverse(pt)          // S⁻¹
+	pt = XorKey(pt, decKeys[0]) // K1
+
+	return pt
+}
+
 func main() {
 	fmt.Println("Учебный проект по реализации Кузнечика на go")
+
+	InitTables()
 
 	masterkey := Key256{
 		0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
@@ -312,8 +352,8 @@ func main() {
 		0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
 	}
 
-	rkeys := KeySchedule(masterkey)
-	ciphertext := Encrypt(rkeys, plaintext)
+	ciphertext := Encrypt(masterkey, plaintext)
+	plaintext2 := Decrypt(masterkey, ciphertext)
 
 	expected := RoundKey{
 		0x7f, 0x67, 0x9d, 0x90, 0xbe, 0xbc, 0x24, 0x30,
@@ -323,12 +363,20 @@ func main() {
 	fmt.Println("=== Тест шифрования ===")
 	fmt.Printf("Открытый текст:  % x\n", plaintext)
 	fmt.Printf("Шифртекст:       % x\n", ciphertext)
-	fmt.Printf("Ожидается:       % x\n", expected)
+	fmt.Printf("Расшифровка:     % x\n", plaintext2)
 
 	if bytes.Equal(ciphertext[:], expected[:]) {
 		fmt.Println("Шифрование работает")
 	} else {
+
 		fmt.Println("Ошибка в шифровании")
+	}
+
+	if bytes.Equal(plaintext2[:], plaintext[:]) {
+		fmt.Println("Расшифрование работает")
+	} else {
+
+		fmt.Println("Ошибка в расшифровке")
 	}
 
 }
