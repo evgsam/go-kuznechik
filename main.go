@@ -14,6 +14,8 @@ type RoundKeys = [10]RoundKey
 // числовое выражение -константа полинома x^8 + x^7 + x^6 + x + 1
 const gf8 = 0xc3
 
+var SL_dec_lookup [16][256]Block // S⁻¹ ○ L⁻¹
+
 // коэфициенты для линейного преобразования
 var L_coeffs = [16]byte{
 	0x94, 0x20, 0x85, 0x10, 0xC2, 0xC0, 0x01, 0xFB,
@@ -90,6 +92,17 @@ var Pi_inverse_table = [256]uint8{
 	0x99, 0x10, 0x44, 0x40, 0x92, 0x3A, 0x01, 0x26,
 	0x12, 0x1A, 0x48, 0x68, 0xF5, 0x81, 0x8B, 0xC7,
 	0xD6, 0x20, 0x0A, 0x08, 0x00, 0x4C, 0xD7, 0x74,
+}
+
+func InitTables() {
+	for i := 0; i < 16; i++ {
+		for j := 0; j < 256; j++ {
+			var y Block
+			y[i] = Pi_inverse_table[j]
+			y = L_invers(y)
+			SL_dec_lookup[i][j] = y
+		}
+	}
 }
 
 func XorBlock(a, b Block) (res Block) {
