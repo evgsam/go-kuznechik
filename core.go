@@ -55,12 +55,6 @@ func S_invers(block Block) Block {
 	return result
 }
 
-// S_inverse — S⁻¹ для финального шага расшифрования
-// Alias для S_invers
-func S_inverse(block Block) Block {
-	return S_invers(block)
-}
-
 // S_inv_L_inv — оптимизированное вычисление (S⁻¹∘L⁻¹) через lookup-таблицы
 // Использует предвычисленную таблицу SL_dec_lookup для ускорения
 func S_inv_L_inv(block Block) Block {

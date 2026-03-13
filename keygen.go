@@ -36,7 +36,7 @@ func F(a, b, c RoundKey) (RoundKey, RoundKey) {
 // K1, K2 берутся из masterKey
 // K3..K10 генерируются через 4 группы по 8 F-функций
 func KeySchedule(masterKey Key256) RoundKeys {
-	constants := GenConstants() // 32 константы C1..C32
+	roundConstants := GenConstants() // 32 константы C1..C32
 
 	var k0, k1 RoundKey           // текущая пара (a,b)
 	copy(k0[:], masterKey[:16])   // K1
@@ -52,7 +52,7 @@ func KeySchedule(masterKey Key256) RoundKeys {
 
 		for step := 0; step < 8; step++ {
 			cIdx := startC + step
-			k0, k1 = F(k0, k1, constants[cIdx])
+			k0, k1 = F(k0, k1, roundConstants[cIdx])
 		}
 
 		// После 8 F сохраняем новую пару
@@ -81,8 +81,8 @@ func GetDecryptRoundKeys(rkeys [10][16]uint8) [10][16]uint8 {
 // Decrypt — функция расшифрования блока
 // Использует схему KeySchedule и обратные преобразования
 func Decrypt(masterKey Key256, ciphertext Block) Block {
-	encKeys := KeySchedule(masterKey)
-	decKeys := GetDecryptRoundKeys(encKeys)
+	encryptKeys := KeySchedule(masterKey)
+	decryptKeys := GetDecryptRoundKeys(encryptKeys)
 
 	pt := ciphertext
 
@@ -91,14 +91,14 @@ func Decrypt(masterKey Key256, ciphertext Block) Block {
 
 	// ШАГ 2: 8 раундов K10→K3
 	for i := 9; i > 1; i-- {
-		pt = XorKey(pt, decKeys[i]) // L⁻¹(Ki)
-		pt = S_inv_L_inv(pt)        // SL⁻¹
+		pt = XorKey(pt, decryptKeys[i]) // L⁻¹(Ki)
+		pt = S_inv_L_inv(pt)            // SL⁻¹
 	}
 
 	// ШАГ 3: Финал
-	pt = XorKey(pt, decKeys[1]) // L⁻¹(K2)
-	pt = S_inverse(pt)          // S⁻¹
-	pt = XorKey(pt, decKeys[0]) // K1
+	pt = XorKey(pt, decryptKeys[1]) // L⁻¹(K2)
+	pt = S_invers(pt)               // S⁻¹
+	pt = XorKey(pt, decryptKeys[0]) // K1
 
 	return pt
 }

@@ -95,7 +95,7 @@ func DecryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 	defer outFile.Close()
 
 	buffer := make([]byte, 16)
-	allDecrypted := make([]byte, 0)
+	decryptedData := make([]byte, 0)
 
 	for {
 		n, _ := inFile.Read(buffer)
@@ -108,11 +108,11 @@ func DecryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 
 		block := Block(buffer)
 		plaintext := Decrypt(masterKey, block)
-		allDecrypted = append(allDecrypted, plaintext[:]...)
+		decryptedData = append(decryptedData, plaintext[:]...)
 	}
 
 	// Удаляем padding
-	cleanData, padErr := pkcs7Unpad(allDecrypted)
+	cleanData, padErr := pkcs7Unpad(decryptedData)
 	if padErr != nil {
 		return fmt.Errorf("padding: %w", padErr)
 	}

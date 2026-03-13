@@ -49,18 +49,6 @@ func parseMasterKeyFromHex(keyStr string) Key256 {
 	return key
 }
 
-// ========== Утилиты ==========
-
-// blockEqual — проверка равенства двух блоков
-func blockEqual(a, b Block) bool {
-	for i := 0; i < 16; i++ {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // ========== CLI ==========
 
 // printHelp — вывод справки по использованию
