@@ -1,3 +1,8 @@
+// Кузнечик — блочный шифр ГОСТ 28147-89
+// Реализация на Go в рамках учебного проекта по
+// криптографическим методам защиты информации
+// Самарин Евгений
+
 package main
 
 import (
@@ -6,10 +11,12 @@ import (
 	"os"
 )
 
-// Переменные из стандарта
+// ========== Инициализация ==========
+
+// gf8 — неприводимый полином поля Галуа GF(2^8)
 const gf8 = 0xc3
 
-// Таблицы для оптимизации расшифрования
+// SL_dec_lookup — таблица для оптимизации SL⁻¹ (S⁻¹∘L⁻¹)
 var SL_dec_lookup [16][256]Block
 
 // InitTables — инициализация таблицы SL⁻¹
@@ -24,6 +31,9 @@ func InitTables() {
 	}
 }
 
+// ========== Конвертация ключей ==========
+
+// parseMasterKeyFromHex — парсинг ключа из hex-строки
 func parseMasterKeyFromHex(keyStr string) Key256 {
 	var key Key256
 	if len(keyStr) != 64 {
@@ -42,6 +52,9 @@ func parseMasterKeyFromHex(keyStr string) Key256 {
 	return key
 }
 
+// ========== Утилиты ==========
+
+// blockEqual — проверка равенства двух блоков
 func blockEqual(a, b Block) bool {
 	for i := 0; i < 16; i++ {
 		if a[i] != b[i] {
@@ -51,43 +64,74 @@ func blockEqual(a, b Block) bool {
 	return true
 }
 
-// main — точка входа
+// ========== CLI ==========
+
+// printHelp — вывод справки по использованию
+func printHelp() {
+	fmt.Println("Кузнечик — блочный шифр ГОСТ 28147-89")
+	fmt.Println()
+	fmt.Println("Использование:")
+	fmt.Println("  kuznechik -e -i <input> -o <output> -k <key>")
+	fmt.Println("  kuznechik -d -i <input> -o <output> -k <key>")
+	fmt.Println()
+	fmt.Println("Параметры:")
+	fmt.Println("  -e            шифрование")
+	fmt.Println("  -d            расшифровка")
+	fmt.Println("  -i <file>     входной файл")
+	fmt.Println("  -o <file>     выходной файл")
+	fmt.Println("  -k <key>      ключ (64 hex символа)")
+	fmt.Println()
+	fmt.Println("Примеры:")
+	fmt.Println("  kuznechik -e -i data.txt -o data.enc -k 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	fmt.Println("  kuznechik -d -i data.enc -o data.txt -k 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+}
+
+// main — точка входа с поддержкой CLI-интерфейса
 func main() {
-	// Парсинг аргументов командной строки
-	masterKeyFlag := flag.String("k", "", "Master key в hex формате (32 байта = 64 символа)")
+	flag.Usage = func() { printHelp() }
+
+	keyFlag := flag.String("k", "", "ключ (64 hex)")
+	inputFlag := flag.String("i", "", "входной файл")
+	outputFlag := flag.String("o", "", "выходной файл")
+	encryptFlag := flag.Bool("e", false, "шифрование")
+	decryptFlag := flag.Bool("d", false, "расшифровка")
+
 	flag.Parse()
 
-	var masterkey Key256
-	if *masterKeyFlag != "" {
-		masterkey = parseMasterKeyFromHex(*masterKeyFlag)
-	} else {
-		fmt.Println("Внимание: Master key не указан, используется дефолтный")
-		masterkey = Key256{
-			0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
-			0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-			0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-			0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+	// CLI режим файлов
+	if *inputFlag != "" && *outputFlag != "" {
+		var masterKey Key256
+		if *keyFlag == "" {
+			fmt.Println("⚠️  дефолтный ключ ГОСТ")
+			masterKey = Key256{
+				0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+				0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+				0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+				0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef,
+			}
+		} else {
+			masterKey = parseMasterKeyFromHex(*keyFlag)
 		}
+
+		InitTables()
+
+		if *encryptFlag {
+			if err := EncryptFileStream(*inputFlag, *outputFlag, masterKey); err != nil {
+				fmt.Fprintf(os.Stderr, "%v\n", err)
+				os.Exit(1)
+			}
+		} else if *decryptFlag {
+			if err := DecryptFileStream(*inputFlag, *outputFlag, masterKey); err != nil {
+				fmt.Fprintf(os.Stderr, " %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Println("Укажите -e (шифрование) или -d (расшифровка)")
+			os.Exit(1)
+		}
+		fmt.Println("Готово!")
+		return
 	}
-
-	InitTables()
-
-	plaintext := RoundKey{
-		0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00,
-		0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x99, 0x88,
-	}
-
-	ciphertext := Encrypt(masterkey, plaintext)
-	plaintext2 := Decrypt(masterkey, ciphertext)
-
-	fmt.Println("=== Тест шифрования ===")
-	fmt.Printf("Открытый текст:  % x\n", plaintext)
-	fmt.Printf("Шифртекст:       % x\n", ciphertext)
-	fmt.Printf("Расшифровка:     % x\n", plaintext2)
-
-	if blockEqual(plaintext2, plaintext) {
-		fmt.Println("Реализация работает")
-	} else {
-		fmt.Println("Ошибка в реализации!")
-	}
+	fmt.Println("Укажите -h для справки")
+	os.Exit(1)
 }

@@ -1,8 +1,9 @@
+// Кузнечик — функции шифрования
+
 package main
 
-// Функции шифрования
-
-// Round — один раунд шифрования (X → S → L)
+// Round — один раунд шифрования
+// Выполняет операцию X → S → L
 func Round(state Block, roundKey RoundKey) Block {
 	state = XorKey(state, roundKey) // X
 	state = S(state)                // S
@@ -11,7 +12,7 @@ func Round(state Block, roundKey RoundKey) Block {
 }
 
 // EncryptBlock — блочное шифрование
-// 9 полных раундов (1-9) + финал (X + S без L)
+// Выполняет 9 полных раундов (X → S → L) + финал (X + S без L)
 func EncryptBlock(plaintext Block, roundKeys RoundKeys) Block {
 	state := plaintext
 
@@ -28,6 +29,7 @@ func EncryptBlock(plaintext Block, roundKeys RoundKeys) Block {
 }
 
 // Encrypt — функция шифрования с раундовой схемой
+// Выполняет 10 раундов с использованием KeySchedule
 func Encrypt(masterKey Key256, block RoundKey) RoundKey {
 	decKeys := KeySchedule(masterKey)
 	state := block

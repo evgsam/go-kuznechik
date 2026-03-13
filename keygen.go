@@ -1,8 +1,9 @@
+// ========== Генерация ключей ==========
+
 package main
 
-// Генерация ключей
-
-// RoundKey конструктор — разложение uint8 на 128-битный вектор
+// Vec128 — конструктор RoundKey из uint8
+// Все байты равны 0, кроме последнего (индекс 0 = младший)
 func Vec128(i uint8) RoundKey {
 	var vec RoundKey
 	// Все байты 0, кроме последнего (индекс 0 = младший)
@@ -21,7 +22,8 @@ func GenConstants() [32]RoundKey {
 	return constants
 }
 
-// F-функция — используется для расширения ключа
+// F — раундовая функция для расширения ключа
+// Используется в KeySchedule для генерации раундовых ключей
 func F(a, b, c RoundKey) (RoundKey, RoundKey) {
 	temp := XorKey(a, c)    // a ⊕ c
 	temp = S(temp)          // S(a ⊕ c)
@@ -76,7 +78,8 @@ func GetDecryptRoundKeys(rkeys [10][16]uint8) [10][16]uint8 {
 	return rkeys_L
 }
 
-// Decrypt — функция расшифрования
+// Decrypt — функция расшифрования блока
+// Использует схему KeySchedule и обратные преобразования
 func Decrypt(masterKey Key256, ciphertext Block) Block {
 	encKeys := KeySchedule(masterKey)
 	decKeys := GetDecryptRoundKeys(encKeys)
