@@ -68,7 +68,6 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 			padded := pkcs7Pad(buffer[:n], 16)
 			ciphertext := Encrypt(masterKey, RoundKey(padded))
 			_, _ = outFile.Write(ciphertext[:])
-			fmt.Printf("Padding: %d байт → %d байт\n", n, 16)
 			break
 		}
 

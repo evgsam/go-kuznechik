@@ -2,6 +2,9 @@
 
 package main
 
+// gf8 — неприводимый полином поля Галуа GF(2^8)
+const gf8 = 0xc3
+
 // GF8Mul — умножение байтов в поле Галуа GF(2^8)
 // Использует неприводимый полином 0xC3 (x^8 + x^7 + x^6 + x + 1)
 func GF8Mul(a, b uint8) uint8 {
@@ -12,7 +15,7 @@ func GF8Mul(a, b uint8) uint8 {
 			c = c ^ a
 		}
 		if a&0x80 != 0 {
-			a = (a << 1) ^ 0xc3
+			a = (a << 1) ^ gf8
 		} else {
 			a = a << 1
 		}

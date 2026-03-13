@@ -13,9 +13,6 @@ import (
 
 // ========== Инициализация ==========
 
-// gf8 — неприводимый полином поля Галуа GF(2^8)
-const gf8 = 0xc3
-
 // SL_dec_lookup — таблица для оптимизации SL⁻¹ (S⁻¹∘L⁻¹)
 var SL_dec_lookup [16][256]Block
 
@@ -68,7 +65,7 @@ func blockEqual(a, b Block) bool {
 
 // printHelp — вывод справки по использованию
 func printHelp() {
-	fmt.Println("Кузнечик — блочный шифр ГОСТ 28147-89")
+	fmt.Println("Кузнечик — блочный шифр ГОСТ Р 34.12-2015")
 	fmt.Println()
 	fmt.Println("Использование:")
 	fmt.Println("  kuznechik -e -i <input> -o <output> -k <key>")
@@ -123,7 +120,7 @@ func main() {
 			fmt.Println("Укажите -e (шифрование) или -d (расшифровка)")
 			os.Exit(1)
 		}
-		fmt.Println("Готово!")
+		fmt.Println("Операция выполнена!")
 		return
 	}
 	fmt.Println("Укажите -h для справки")
