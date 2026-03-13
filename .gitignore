@@ -1,3 +1,16 @@
 go-kuznechik
 test.enc
 go-kuznechik
+out.enc
+test_dec.txt
+test.enc
+test.txt
+test2.txt
+.gitignore
+go-kuznechik
+kuznechik
+out.enc
+test_dec.txt
+test.enc
+test.txt
+test2.txt
