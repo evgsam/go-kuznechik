@@ -37,15 +37,12 @@ func F(a, b, c RoundKey) (RoundKey, RoundKey) {
 // K3..K10 генерируются через 4 группы по 8 F-функций
 func KeySchedule(masterKey Key256) RoundKeys {
 	roundConstants := GenConstants() // 32 константы C1..C32
-
-	var k0, k1 RoundKey           // текущая пара (a,b)
-	copy(k0[:], masterKey[:16])   // K1
-	copy(k1[:], masterKey[16:32]) // K2
-
+	var k0, k1 RoundKey              // текущая пара (a,b)
+	copy(k0[:], masterKey[:16])      // K1
+	copy(k1[:], masterKey[16:32])    // K2
 	var rkeys RoundKeys
 	rkeys[0] = k0 // K1
 	rkeys[1] = k1 // K2
-
 	// 4 группы по 8 F-функций
 	for group := 0; group < 4; group++ {
 		startC := group * 8 // C1-8, C9-16, C17-24, C25-32
@@ -54,7 +51,6 @@ func KeySchedule(masterKey Key256) RoundKeys {
 			cIdx := startC + step
 			k0, k1 = F(k0, k1, roundConstants[cIdx])
 		}
-
 		// После 8 F сохраняем новую пару
 		rkeys[2+2*group] = k0 // K3,K5,K7,K9
 		rkeys[3+2*group] = k1 // K4,K6,K8,K10
@@ -63,42 +59,15 @@ func KeySchedule(masterKey Key256) RoundKeys {
 	return rkeys
 }
 
-// GetDecryptRoundKeys — получение расшифрованных ключей
-// K1 — без изменений, K2..K10 — L⁻¹(Kᵢ)
-func GetDecryptRoundKeys(rkeys [10][16]uint8) [10][16]uint8 {
-	var rkeys_L [10][16]uint8
-
-	// K1 (индекс 0) — БЕЗ ИЗМЕНЕНИЙ
-	rkeys_L[0] = rkeys[0]
-
-	// K2..K10 (индексы 1-9) — L⁻¹(Kᵢ)
-	for k := 1; k < 10; k++ {
-		rkeys_L[k] = L_invers(rkeys[k])
-	}
-	return rkeys_L
-}
-
 // Decrypt — функция расшифрования блока
-// Использует схему KeySchedule и обратные преобразования
 func Decrypt(masterKey Key256, ciphertext Block) Block {
-	encryptKeys := KeySchedule(masterKey)
-	decryptKeys := GetDecryptRoundKeys(encryptKeys)
-
+	key := KeySchedule(masterKey)
 	pt := ciphertext
-
-	// ШАГ 1: L⁻¹ на входе
-	pt = L_invers(pt)
-
-	// ШАГ 2: 8 раундов K10→K3
-	for i := 9; i > 1; i-- {
-		pt = XorKey(pt, decryptKeys[i]) // L⁻¹(Ki)
-		pt = S_inv_L_inv(pt)            // SL⁻¹
+	for i := 9; i >= 1; i-- {
+		pt = XorKey(pt, key[i]) // L⁻¹(Ki)
+		pt = L_invers(pt)
+		pt = S_invers(pt)
 	}
-
-	// ШАГ 3: Финал
-	pt = XorKey(pt, decryptKeys[1]) // L⁻¹(K2)
-	pt = S_invers(pt)               // S⁻¹
-	pt = XorKey(pt, decryptKeys[0]) // K1
-
+	pt = XorKey(pt, key[0])
 	return pt
 }
