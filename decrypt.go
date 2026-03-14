@@ -9,10 +9,10 @@ func Decrypt(masterKey Key256, ciphertext Block) Block {
 	key := KeySchedule(masterKey)
 	pt := ciphertext
 	for i := 9; i >= 1; i-- {
-		pt = XorKey(pt, key[i]) // L⁻¹(Ki)
+		pt = X(pt, key[i]) // L⁻¹(Ki)
 		pt = L_invers(pt)
 		pt = S_invers(pt)
 	}
-	pt = XorKey(pt, key[0])
+	pt = X(pt, key[0])
 	return pt
 }

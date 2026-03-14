@@ -25,10 +25,10 @@ func GenConstants() [32]RoundKey {
 // F — раундовая функция для расширения ключа
 // Используется в KeySchedule для генерации раундовых ключей
 func F(a, b, c RoundKey) (RoundKey, RoundKey) {
-	temp := XorKey(a, c)    // a ⊕ c
-	temp = S(temp)          // S(a ⊕ c)
-	temp = L(temp)          // L(S(a ⊕ c))
-	newA := XorKey(b, temp) // b ⊕ L(S(a ⊕ c))
+	temp := X(a, c)    // a ⊕ c
+	temp = S(temp)     // S(a ⊕ c)
+	temp = L(temp)     // L(S(a ⊕ c))
+	newA := X(b, temp) // b ⊕ L(S(a ⊕ c))
 	return newA, a
 }
 
@@ -46,7 +46,6 @@ func KeySchedule(masterKey Key256) RoundKeys {
 	// 4 группы по 8 F-функций
 	for group := 0; group < 4; group++ {
 		startC := group * 8 // C1-8, C9-16, C17-24, C25-32
-
 		for step := 0; step < 8; step++ {
 			cIdx := startC + step
 			k0, k1 = F(k0, k1, roundConstants[cIdx])
@@ -58,4 +57,3 @@ func KeySchedule(masterKey Key256) RoundKeys {
 
 	return rkeys
 }
-

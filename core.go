@@ -1,6 +1,26 @@
-// ========== L-преобразование ==========
-
 package main
+
+// gf8 — неприводимый полином поля Галуа GF(2^8)
+const gf8 = 0xc3
+
+// GF8Mul — умножение байтов в поле Галуа GF(2^8)
+// Использует неприводимый полином 0xC3 (x^8 + x^7 + x^6 + x + 1)
+func GF8Mul(a, b uint8) uint8 {
+	var c uint8
+	c = 0
+	for b != 0 { // проверяем, остались ли биты в b
+		if b&1 != 0 {
+			c = c ^ a
+		}
+		if a&0x80 != 0 {
+			a = (a << 1) ^ gf8
+		} else {
+			a = a << 1
+		}
+		b >>= 1 // переходим к следующему биту
+	}
+	return c
+}
 
 // L-преобразование и вспомогательные таблицы
 
@@ -55,13 +75,11 @@ func S_invers(block Block) Block {
 	return result
 }
 
-// S_inv_L_inv — оптимизированное вычисление (S⁻¹∘L⁻¹) через lookup-таблицы
-// Использует предвычисленную таблицу SL_dec_lookup для ускорения
-func S_inv_L_inv(block Block) Block {
-	var result Block
-	copy(result[:], SL_dec_lookup[0][block[0]][:])
-	for j := 1; j < 16; j++ {
-		result = XorBlock(result, SL_dec_lookup[j][block[j]])
+// XorBlock — побитовое сложение двух блоков
+func X(a, b Block) (res Block) {
+	var i int
+	for i = 0; i < 16; i++ {
+		res[i] = a[i] ^ b[i]
 	}
-	return result
+	return res
 }

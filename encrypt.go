@@ -9,10 +9,10 @@ func Encrypt(masterKey Key256, block RoundKey) RoundKey {
 	key := KeySchedule(masterKey)
 	state := block
 	for i := 0; i < 9; i++ {
-		state = XorKey(state, key[i]) // X
-		state = S(state)              // S
-		state = L(state)              // L
+		state = X(state, key[i]) // X
+		state = S(state)         // S
+		state = L(state)         // L
 	}
-	state = XorKey(state, key[9])
+	state = X(state, key[9])
 	return state
 }

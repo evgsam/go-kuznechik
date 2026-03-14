@@ -11,25 +11,7 @@ import (
 	"os"
 )
 
-// ========== Инициализация ==========
-
-// SL_dec_lookup — таблица для оптимизации SL⁻¹ (S⁻¹∘L⁻¹)
-var SL_dec_lookup [16][256]Block
-
-// InitTables — инициализация таблицы SL⁻¹
-func InitTables() {
-	for i := 0; i < 16; i++ {
-		for j := 0; j < 256; j++ {
-			var y Block
-			y[i] = Pi_inverse_table[j]
-			y = L_invers(y)
-			SL_dec_lookup[i][j] = y
-		}
-	}
-}
-
 // ========== Конвертация ключей ==========
-
 // parseMasterKeyFromHex — парсинг ключа из hex-строки
 func parseMasterKeyFromHex(keyStr string) Key256 {
 	var key Key256
@@ -91,8 +73,6 @@ func main() {
 			os.Exit(1)
 		}
 		masterKey = parseMasterKeyFromHex(*keyFlag)
-
-		InitTables()
 
 		if *encryptFlag {
 			if err := EncryptFileStream(*inputFlag, *outputFlag, masterKey); err != nil {
