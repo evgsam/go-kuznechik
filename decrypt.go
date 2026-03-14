@@ -10,8 +10,8 @@ func Decrypt(masterKey Key256, ciphertext Block) Block {
 	pt := ciphertext
 	for i := 9; i >= 1; i-- {
 		pt = X(pt, key[i]) // L⁻¹(Ki)
-		pt = L_invers(pt)
-		pt = S_invers(pt)
+		pt = LInvers(pt)
+		pt = SInvers(pt)
 	}
 	pt = X(pt, key[0])
 	return pt

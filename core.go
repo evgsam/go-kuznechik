@@ -40,9 +40,8 @@ func L(block Block) Block {
 	return block
 }
 
-// L_invers — обратное L-преобразование
-// Использует LFSR-подобную схему для восстановления исходного блока
-func L_invers(block Block) Block {
+// LInvers — обратное L-преобразование
+func LInvers(block Block) Block {
 	var x uint8
 	for j := 0; j < 16; j++ { // 16 итераций LFSR
 		x = block[0]
@@ -65,9 +64,9 @@ func S(block Block) Block {
 	return result
 }
 
-// S_invers — обратная S-функция
+// SInvers — обратная S-функция
 // Применяет обратную таблицу подстановки Pi⁻¹ к каждому байту
-func S_invers(block Block) Block {
+func SInvers(block Block) Block {
 	result := block
 	for i := 0; i < 16; i++ {
 		result[i] = Pi_inverse_table[block[i]]
@@ -75,7 +74,7 @@ func S_invers(block Block) Block {
 	return result
 }
 
-// XorBlock — побитовое сложение двух блоков
+// X — побитовое сложение
 func X(a, b Block) (res Block) {
 	var i int
 	for i = 0; i < 16; i++ {
