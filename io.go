@@ -11,6 +11,9 @@ import (
 // Блок 16 байт дополняется до длины 16 с помощью PKCS#7 padding
 func pkcs7Pad(block []byte, blockSize int) []byte {
 	padLen := blockSize - len(block)
+	if padLen == 0 {
+		padLen = blockSize // Полный блок!
+	}
 	padded := make([]byte, blockSize)
 	copy(padded, block)
 	for i := len(block); i < blockSize; i++ {
@@ -56,26 +59,27 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 	defer outFile.Close()
 
 	buffer := make([]byte, 16)
+	eof := false
 
-	for {
+	for !eof {
 		n, _ := inFile.Read(buffer)
 		if n == 0 {
-			break
+			eof = true
+			continue
 		}
 
-		if n < 16 {
-			// Последний блок — добавляем padding
-			padded := pkcs7Pad(buffer[:n], 16)
-			ciphertext := Encrypt(masterKey, RoundKey(padded))
-			_, _ = outFile.Write(ciphertext[:])
-			break
-		}
-
-		// Полный блок 16 байт
-		block := RoundKey(buffer)
-		ciphertext := Encrypt(masterKey, block)
+		padded := pkcs7Pad(buffer[:n], 16)
+		ciphertext := Encrypt(masterKey, RoundKey(padded))
 		_, _ = outFile.Write(ciphertext[:])
 	}
+
+	finalPad := make([]byte, 16)
+	for i := 0; i < 16; i++ {
+		finalPad[i] = 16 // 0x10
+	}
+	finalCipher := Encrypt(masterKey, RoundKey(finalPad))
+	_, _ = outFile.Write(finalCipher[:])
+
 	return nil
 }
 
