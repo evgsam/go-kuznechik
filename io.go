@@ -54,11 +54,6 @@ func pkcs7Unpad(data []byte) ([]byte, error) {
 // EncryptFileStream — потоковое шифрование файла
 // Читает входной файл по блокам 16 байт, добавляет padding и шифрует
 func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
-	stat, err := os.Stat(inputPath)
-	if err != nil {
-		return fmt.Errorf("stat %s: %w", inputPath, err)
-	}
-
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("открыть %s: %w", inputPath, err)
@@ -69,18 +64,7 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 		return fmt.Errorf("создать %s: %w", outputPath, err)
 	}
 	defer outFile.Close()
-
-	// СЛУЧАЙ 1: Ровно 16 байт = ГОСТ-тест (БЕЗ padding)
-	// Это сделано только в целях демонстрации работы по контрольными примерам из ГОСТ
-	// в общем случае, эту часть нужно закомментировать или удалить
-	if stat.Size() == 16 {
-		ciphertext := Encrypt(masterKey, RoundKey(data))
-		_, _ = outFile.Write(ciphertext[:])
-		return nil
-	}
-
-	// СЛУЧАЙ 2: Произвольная длина = PKCS#7
-	//Это общий случай для всего
+	//добавляю padding
 	padded := pkcs7Pad(data, 16)
 	for i := 0; i < len(padded); i += 16 {
 		block := RoundKey(padded[i : i+16])
@@ -93,11 +77,6 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 // DecryptFileStream — потоковое расшифрование файла
 // Читает зашифрованный файл по блокам 16 байт и удаляет padding
 func DecryptFileStream(inputPath, outputPath string, masterKey Key256) error {
-	stat, err := os.Stat(inputPath)
-	if err != nil {
-		return fmt.Errorf("stat %s: %w", inputPath, err)
-	}
-
 	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		return fmt.Errorf("открыть %s: %w", inputPath, err)
@@ -116,16 +95,7 @@ func DecryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 		decryptedData = append(decryptedData, plaintext[:]...)
 	}
 
-	// СЛУЧАЙ 1: ГОСТ-тест (16 байт шифротекста = 16 байт plaintext)
-	// Это сделано только в целях демонстрации работы по контрольными примерам из ГОСТ
-	// в общем случае, эту часть нужно закомментировать или удалить
-	if stat.Size() == 16 {
-		outFile.Write(decryptedData)
-		return nil
-	}
-
-	// СЛУЧАЙ 2: PKCS#7
-	// Корректная работа
+	// Удаляю padding
 	cleanData, err := pkcs7Unpad(decryptedData)
 	if err != nil {
 		return fmt.Errorf("padding: %w", err)
