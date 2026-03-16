@@ -71,6 +71,8 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 	defer outFile.Close()
 
 	// СЛУЧАЙ 1: Ровно 16 байт = ГОСТ-тест (БЕЗ padding)
+	// Это сделано только в целях демонстрации работы по контрольными примерам из ГОСТ
+	// в общем случае, эту часть нужно закомментировать или удалить
 	if stat.Size() == 16 {
 		ciphertext := Encrypt(masterKey, RoundKey(data))
 		_, _ = outFile.Write(ciphertext[:])
@@ -78,6 +80,7 @@ func EncryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 	}
 
 	// СЛУЧАЙ 2: Произвольная длина = PKCS#7
+	//Это общий случай для всего
 	padded := pkcs7Pad(data, 16)
 	for i := 0; i < len(padded); i += 16 {
 		block := RoundKey(padded[i : i+16])
@@ -114,12 +117,15 @@ func DecryptFileStream(inputPath, outputPath string, masterKey Key256) error {
 	}
 
 	// СЛУЧАЙ 1: ГОСТ-тест (16 байт шифротекста = 16 байт plaintext)
+	// Это сделано только в целях демонстрации работы по контрольными примерам из ГОСТ
+	// в общем случае, эту часть нужно закомментировать или удалить
 	if stat.Size() == 16 {
 		outFile.Write(decryptedData)
 		return nil
 	}
 
 	// СЛУЧАЙ 2: PKCS#7
+	// Корректная работа
 	cleanData, err := pkcs7Unpad(decryptedData)
 	if err != nil {
 		return fmt.Errorf("padding: %w", err)
